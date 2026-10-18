@@ -63,6 +63,22 @@ jobs:
           path: reports/coverage.xml
           if-no-files-found: warn
 
+  docker:
+    name: Build and test Docker image
+    needs: [test]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build image, run container, verify /health and /predict
+        run: bash scripts/docker_smoke_test.sh 2>&1 | tee docker-smoke.log
+      - name: Upload Docker smoke-test log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: docker-smoke-log
+          path: docker-smoke.log
+          if-no-files-found: warn
+
   train:
     name: Train and package model
     needs: [lint, test]

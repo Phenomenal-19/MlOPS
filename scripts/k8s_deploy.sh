@@ -25,7 +25,7 @@ docker info >/dev/null 2>&1 || { echo "Docker is not usable for this user" >&2; 
 command -v kind >/dev/null && command -v kubectl >/dev/null || bash scripts/k8s_setup.sh
 
 echo "==> Image $IMAGE"
-docker image inspect "$IMAGE" >/dev/null 2>&1 || docker build -t "$IMAGE" .
+docker build -q -t "$IMAGE" .   # cached layers make this fast; picks up code changes
 
 echo "==> Cluster '$CLUSTER'"
 if kind get clusters 2>/dev/null | grep -qx "$CLUSTER"; then

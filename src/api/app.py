@@ -4,6 +4,7 @@ Endpoints
   GET  /health   liveness + whether the model is loaded
   GET  /         service / model info
   POST /predict  one patient (JSON) -> prediction, label, confidence, risk_probability
+  GET  /metrics  Prometheus metrics (request counts, latency, predictions, confidence)
 """
 import json
 import logging
@@ -13,15 +14,23 @@ import uuid
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException, Request, Response
+from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
+from src.api.observability import (
+    CONFIDENCE,
+    HTTP_LATENCY,
+    HTTP_REQUESTS,
+    MODEL_INFO,
+    PREDICTIONS,
+    QUIET_PATHS,
+    UNMATCHED,
+    configure_logging,
+)
 from src.predict import MODEL_PATH, load_model, predict
 
-logging.basicConfig(
-    level=os.getenv("LOG_LEVEL", "INFO"),
-    format="%(asctime)s %(levelname)s %(name)s %(message)s",
-)
+configure_logging()
 logger = logging.getLogger("heart-api")
 
 METADATA_PATH = Path(os.getenv("METADATA_PATH", Path(MODEL_PATH).with_name("metadata.json")))
@@ -117,6 +126,7 @@ def _model_name() -> str:
 async def lifespan(app: FastAPI):
     app.state.model = load_model(Path(MODEL_PATH))
     app.state.model_name = _model_name()
+    MODEL_INFO.labels(model=app.state.model_name).set(1)
     logger.info("Loaded model '%s' from %s", app.state.model_name, MODEL_PATH)
     yield
 
@@ -130,7 +140,7 @@ app = FastAPI(
 
 
 @app.middleware("http")
-async def log_requests(request: Request, call_next):
+async def observe_requests(request: Request, call_next):
     request_id = uuid.uuid4().hex[:8]
     start = time.perf_counter()
     try:
@@ -138,10 +148,21 @@ async def log_requests(request: Request, call_next):
     except Exception:
         logger.exception("req=%s %s %s unhandled error", request_id, request.method,
                          request.url.path)
+        HTTP_REQUESTS.labels(request.method, UNMATCHED, "500").inc()
         raise
-    ms = (time.perf_counter() - start) * 1000
-    logger.info("req=%s %s %s status=%s latency_ms=%.1f", request_id, request.method,
-                request.url.path, response.status_code, ms)
+    seconds = time.perf_counter() - start
+    route = request.scope.get("route")
+    path = route.path if route is not None else UNMATCHED  # template, not the raw URL
+    if path != "/metrics":
+        HTTP_REQUESTS.labels(request.method, path, str(response.status_code)).inc()
+        HTTP_LATENCY.labels(request.method, path).observe(seconds)
+    level = logging.DEBUG if request.url.path in QUIET_PATHS else logging.INFO
+    logger.log(
+        level, "req=%s %s %s status=%s latency_ms=%.1f", request_id, request.method,
+        request.url.path, response.status_code, seconds * 1000,
+        extra={"request_id": request_id, "method": request.method,
+               "path": request.url.path, "status": response.status_code,
+               "latency_ms": round(seconds * 1000, 1)})
     response.headers["X-Request-ID"] = request_id
     return response
 
@@ -149,6 +170,11 @@ async def log_requests(request: Request, call_next):
 @app.get("/health")
 def health(request: Request) -> dict:
     return {"status": "ok", "model_loaded": hasattr(request.app.state, "model")}
+
+
+@app.get("/metrics", include_in_schema=False)
+def metrics() -> Response:
+    return Response(generate_latest(), media_type=CONTENT_TYPE_LATEST)
 
 
 @app.get("/")
@@ -164,5 +190,8 @@ def predict_endpoint(patient: Patient, request: Request) -> Prediction:
     except Exception as exc:  # model/preprocessing failure, not a client error
         logger.exception("prediction failed")
         raise HTTPException(status_code=500, detail="Prediction failed") from exc
-    logger.info("prediction=%s confidence=%.3f", result["prediction"], result["confidence"])
+    PREDICTIONS.labels(label=result["label"]).inc()
+    CONFIDENCE.observe(result["confidence"])
+    logger.info("prediction=%s confidence=%.3f", result["prediction"], result["confidence"],
+                extra={"prediction": result["prediction"], "confidence": result["confidence"]})
     return Prediction(**result, model=request.app.state.model_name)

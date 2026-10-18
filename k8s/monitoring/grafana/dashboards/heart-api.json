@@ -1,0 +1,531 @@
+{
+  "uid": "heart-api",
+  "title": "Heart Disease API",
+  "tags": [
+    "mlops",
+    "heart-disease"
+  ],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "10s",
+  "time": {
+    "from": "now-15m",
+    "to": "now"
+  },
+  "editable": false,
+  "panels": [
+    {
+      "id": 1,
+      "type": "stat",
+      "title": "Total predictions served",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 6,
+        "h": 4
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "sum(api_predictions_total)",
+          "legendFormat": "",
+          "instant": true,
+          "range": false,
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "blue"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "area"
+      }
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "Predict requests / sec",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 6,
+        "y": 0,
+        "w": 6,
+        "h": 4
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "sum(rate(api_http_requests_total{path=\"/predict\"}[1m]))",
+          "legendFormat": "",
+          "instant": false,
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "decimals": 2
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "area"
+      }
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "Predict error rate (4xx/5xx)",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 0,
+        "w": 6,
+        "h": 4
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "100 * sum(rate(api_http_requests_total{path=\"/predict\",status=~\"4..|5..\"}[5m])) / sum(rate(api_http_requests_total{path=\"/predict\"}[5m]))",
+          "legendFormat": "",
+          "instant": false,
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "decimals": 1,
+          "min": 0,
+          "max": 100,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 5
+              },
+              {
+                "color": "red",
+                "value": 20
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "area"
+      }
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "API pods up",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 18,
+        "y": 0,
+        "w": 6,
+        "h": 4
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "count(up{job=\"heart-api\"} == 1)",
+          "legendFormat": "",
+          "instant": true,
+          "range": false,
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 1
+              },
+              {
+                "color": "green",
+                "value": 2
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "area"
+      }
+    },
+    {
+      "id": 5,
+      "type": "timeseries",
+      "title": "Requests / sec by status code",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 4,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "sum by (status) (rate(api_http_requests_total{path=\"/predict\"}[1m]))",
+          "legendFormat": "{{status}}",
+          "instant": false,
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps"
+        },
+        "overrides": []
+      },
+      "options": {}
+    },
+    {
+      "id": 6,
+      "type": "timeseries",
+      "title": "Predict latency (p50 / p95 / p99)",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 4,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "histogram_quantile(0.50, sum by (le) (rate(api_http_request_duration_seconds_bucket{path=\"/predict\"}[2m])))",
+          "legendFormat": "p50",
+          "instant": false,
+          "range": true,
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(api_http_request_duration_seconds_bucket{path=\"/predict\"}[2m])))",
+          "legendFormat": "p95",
+          "instant": false,
+          "range": true,
+          "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "histogram_quantile(0.99, sum by (le) (rate(api_http_request_duration_seconds_bucket{path=\"/predict\"}[2m])))",
+          "legendFormat": "p99",
+          "instant": false,
+          "range": true,
+          "refId": "C"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "options": {}
+    },
+    {
+      "id": 7,
+      "type": "piechart",
+      "title": "Predictions by class",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 12,
+        "w": 8,
+        "h": 8
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "sum by (label) (api_predictions_total)",
+          "legendFormat": "{{label}}",
+          "instant": true,
+          "range": false,
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "options": {
+        "pieType": "donut",
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "values": [
+            "value",
+            "percent"
+          ]
+        },
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        }
+      }
+    },
+    {
+      "id": 8,
+      "type": "timeseries",
+      "title": "Average prediction confidence",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 8,
+        "y": 12,
+        "w": 8,
+        "h": 8
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "sum(rate(api_prediction_confidence_sum[2m])) / sum(rate(api_prediction_confidence_count[2m]))",
+          "legendFormat": "avg confidence",
+          "instant": false,
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "min": 0.5,
+          "max": 1
+        },
+        "overrides": []
+      },
+      "options": {}
+    },
+    {
+      "id": 9,
+      "type": "timeseries",
+      "title": "Predict requests / sec per pod (load balancing)",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 16,
+        "y": 12,
+        "w": 8,
+        "h": 8
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "sum by (pod) (rate(api_http_requests_total{path=\"/predict\"}[1m]))",
+          "legendFormat": "{{pod}}",
+          "instant": false,
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps"
+        },
+        "overrides": []
+      },
+      "options": {}
+    },
+    {
+      "id": 10,
+      "type": "timeseries",
+      "title": "CPU usage per pod (cores)",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 20,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "rate(process_cpu_seconds_total{job=\"heart-api\"}[1m])",
+          "legendFormat": "{{pod}}",
+          "instant": false,
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "options": {}
+    },
+    {
+      "id": 11,
+      "type": "timeseries",
+      "title": "Memory (resident) per pod",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 20,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "process_resident_memory_bytes{job=\"heart-api\"}",
+          "legendFormat": "{{pod}}",
+          "instant": false,
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes"
+        },
+        "overrides": []
+      },
+      "options": {}
+    }
+  ]
+}

@@ -1,0 +1,30 @@
+# Name-based routing through the same ingress controller as the API (localhost:8080).
+# *.localhost resolves to 127.0.0.1 in modern browsers, so no hosts-file edit is needed.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: monitoring
+  namespace: monitoring
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: grafana.localhost
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: grafana
+                port:
+                  name: http
+    - host: prometheus.localhost
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: prometheus
+                port:
+                  name: http

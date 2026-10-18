@@ -83,17 +83,21 @@ jobs:
     name: Deploy to Kubernetes (kind) and verify
     needs: [docker]
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
       - name: Create kind cluster, deploy manifests, verify through the ingress
         run: bash scripts/k8s_deploy.sh 2>&1 | tee k8s-deploy.log
-      - name: Upload Kubernetes deployment log
+      - name: Deploy Prometheus and Grafana, generate traffic, verify monitoring
+        run: bash scripts/k8s_monitoring.sh 2>&1 | tee k8s-monitoring.log
+      - name: Upload Kubernetes deployment and monitoring logs
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: k8s-deploy-log
-          path: k8s-deploy.log
+          path: |
+            k8s-deploy.log
+            k8s-monitoring.log
           if-no-files-found: warn
 
   train:

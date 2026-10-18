@@ -36,6 +36,8 @@ spec:
           env:
             - name: LOG_LEVEL
               value: INFO
+            - name: LOG_FORMAT
+              value: json   # one JSON object per line for log collectors
           readinessProbe:
             httpGet:
               path: /health

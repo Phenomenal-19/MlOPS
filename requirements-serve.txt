@@ -1,0 +1,7 @@
+# Minimal runtime for model inference (API deps are added in the serving step).
+# Versions must match the training environment used to pickle the model.
+pandas==2.3.3
+numpy==2.5.4
+scipy==1.18.1
+scikit-learn==1.9.1
+joblib==1.6.0

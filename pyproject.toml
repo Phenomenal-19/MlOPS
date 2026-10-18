@@ -1,0 +1,12 @@
+[tool.pytest.ini_options]
+testpaths = ["test"]
+pythonpath = ["."]
+addopts = "-ra --strict-markers"
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+extend-exclude = ["mlruns", "mlartifacts", ".venv"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B"]

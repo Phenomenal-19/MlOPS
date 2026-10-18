@@ -1,0 +1,13 @@
+.venv/
+__pycache__/
+*.pyc
+mlruns/
+.pytest_cache/
+.ipynb_checkpoints/
+data/raw/
+mlflow.db
+mlartifacts/
+reports/junit.xml
+reports/coverage.xml
+.coverage
+.ruff_cache/

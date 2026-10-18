@@ -1,0 +1,130 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PYTHON_VERSION: "3.12"
+  MLFLOW_DISABLE_AGENT_HINT: "1"
+
+jobs:
+  lint:
+    name: Lint (ruff)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: requirements-dev.txt
+      - run: pip install ruff==0.17.1
+      - name: Ruff check
+        run: ruff check . --output-format=github
+
+  test:
+    name: Unit tests (pytest)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: requirements-dev.txt
+      - name: Install dependencies
+        run: pip install -r requirements-dev.txt
+      - name: Run tests with coverage
+        run: |
+          mkdir -p reports
+          python -m pytest \
+            --junitxml=reports/junit.xml \
+            --cov=src --cov-report=xml:reports/coverage.xml --cov-report=term
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: reports/junit.xml
+          if-no-files-found: warn
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: reports/coverage.xml
+          if-no-files-found: warn
+
+  train:
+    name: Train and package model
+    needs: [lint, test]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: requirements.txt
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: Refresh dataset from UCI (falls back to the committed copy)
+        continue-on-error: true
+        run: |
+          python -m src.data.download
+          python -m src.data.preprocess
+      - name: Generate EDA figures
+        run: python -m src.eda.run_eda
+      - name: Train, tune and track models (MLflow)
+        run: python -m src.models.train
+      - name: Package best model
+        run: python -m src.models.package
+      - name: Model quality gate
+        run: python -m src.models.quality_gate
+      - name: Smoke-test inference on the packaged model
+        run: python -m src.predict --input sample_input.json
+      - name: Publish metrics to run summary
+        if: always()
+        run: |
+          if [ -f reports/model_comparison.csv ]; then
+            echo "## Model comparison" >> "$GITHUB_STEP_SUMMARY"
+            python - <<'PY' >> "$GITHUB_STEP_SUMMARY"
+          import csv
+          rows = list(csv.reader(open("reports/model_comparison.csv")))
+          print("| " + " | ".join(rows[0]) + " |")
+          print("|" + "---|" * len(rows[0]))
+          for r in rows[1:]:
+              print("| " + " | ".join(r) + " |")
+          PY
+          fi
+      - name: Upload trained model
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: model
+          path: models/
+          if-no-files-found: warn
+      - name: Upload reports and EDA figures
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: reports
+          path: reports/
+          if-no-files-found: warn
+      - name: Upload MLflow tracking store
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mlflow-tracking
+          path: |
+            mlflow.db
+            mlruns/
+          if-no-files-found: warn

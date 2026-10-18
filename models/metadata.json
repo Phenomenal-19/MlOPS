@@ -1,0 +1,42 @@
+{
+  "model": "logistic_regression",
+  "mlflow_run_id": "2d6b49d1b3454fcbba580ae914b99643",
+  "metrics": {
+    "cv_f1_std": 0.0069,
+    "cv_accuracy_std": 0.01,
+    "cv_roc_auc_mean": 0.9025,
+    "cv_accuracy_mean": 0.8471,
+    "test_f1": 0.8814,
+    "test_roc_auc": 0.9665,
+    "cv_recall_std": 0.0459,
+    "cv_roc_auc_std": 0.0144,
+    "cv_recall_mean": 0.7834,
+    "test_precision": 0.8387,
+    "cv_f1_mean": 0.8245,
+    "test_accuracy": 0.8852,
+    "cv_precision_std": 0.0542,
+    "test_recall": 0.9286,
+    "cv_precision_mean": 0.8768
+  },
+  "features": [
+    "age",
+    "trestbps",
+    "chol",
+    "thalach",
+    "oldpeak",
+    "sex",
+    "cp",
+    "fbs",
+    "restecg",
+    "exang",
+    "slope",
+    "ca",
+    "thal"
+  ],
+  "target": "target (1 = heart disease present)",
+  "library_versions": {
+    "scikit-learn": "1.9.1",
+    "pandas": "2.3.3",
+    "numpy": "2.5.4"
+  }
+}

@@ -1,0 +1,11 @@
+# Full project environment (EDA + training + tracking). Python 3.12.
+# Serving image uses the smaller requirements-serve.txt.
+pandas==2.3.3
+numpy==2.5.4
+scipy==1.18.1
+scikit-learn==1.9.1
+joblib==1.6.0
+cloudpickle==3.1.2
+matplotlib==3.11.2
+seaborn==0.13.2
+mlflow==3.17.1

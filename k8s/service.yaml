@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: heart-api
+  namespace: heart-mlops
+  labels:
+    app: heart-api
+spec:
+  type: ClusterIP   # exposed outside the cluster through the Ingress
+  selector:
+    app: heart-api
+  ports:
+    - name: http
+      port: 80
+      targetPort: http

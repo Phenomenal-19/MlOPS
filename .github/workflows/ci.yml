@@ -79,6 +79,23 @@ jobs:
           path: docker-smoke.log
           if-no-files-found: warn
 
+  kubernetes:
+    name: Deploy to Kubernetes (kind) and verify
+    needs: [docker]
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create kind cluster, deploy manifests, verify through the ingress
+        run: bash scripts/k8s_deploy.sh 2>&1 | tee k8s-deploy.log
+      - name: Upload Kubernetes deployment log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: k8s-deploy-log
+          path: k8s-deploy.log
+          if-no-files-found: warn
+
   train:
     name: Train and package model
     needs: [lint, test]

@@ -46,10 +46,16 @@ kubectl -n ingress-nginx wait --for=condition=ready pod \
   -l app.kubernetes.io/component=controller --timeout=240s
 
 echo "==> Applying manifests"
+EXISTED=false
+kubectl -n "$NS" get deployment heart-api >/dev/null 2>&1 && EXISTED=true
 kubectl apply -f k8s/namespace.yaml
 kubectl apply -f k8s/deployment.yaml -f k8s/service.yaml -f k8s/ingress.yaml
-kubectl -n "$NS" rollout restart deployment/heart-api >/dev/null
+# On a re-run the manifest is unchanged, so restart to pick up a freshly loaded image.
+if [ "$EXISTED" = true ]; then
+  kubectl -n "$NS" rollout restart deployment/heart-api >/dev/null
+fi
 kubectl -n "$NS" rollout status deployment/heart-api --timeout=180s
+kubectl -n "$NS" wait --for=condition=ready pod -l app=heart-api --timeout=120s
 
 echo "==> Verifying through the ingress at $BASE"
 for _ in $(seq 1 30); do
@@ -70,13 +76,20 @@ CODE=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$BASE/predict" \
 [ "$CODE" = "422" ] || { echo "Expected 422 for invalid input, got $CODE" >&2; exit 1; }
 echo "invalid input rejected with 422"
 
+echo "==> Sending 20 requests to show the Service spreading load across pods"
+for _ in $(seq 1 20); do
+  curl -sf -X POST "$BASE/predict" -H "Content-Type: application/json" \
+    -d @sample_input.json >/dev/null
+done
+
 echo "==> Cluster state"
 kubectl -n "$NS" get deployment,pods,svc,ingress -o wide
 
-echo "==> Requests were load-balanced across pods (log lines per pod)"
-for pod in $(kubectl -n "$NS" get pods -l app=heart-api -o name); do
-  printf '%s: ' "$pod"
-  kubectl -n "$NS" logs "$pod" | grep -c "POST /predict" || true
+echo "==> POST /predict requests handled by each running pod"
+for pod in $(kubectl -n "$NS" get pods -l app=heart-api \
+    --field-selector=status.phase=Running -o name); do
+  count=$(kubectl -n "$NS" logs "$pod" | grep -c "POST /predict" || true)
+  echo "$pod: $count"
 done
 
 echo "==> KUBERNETES DEPLOYMENT VERIFIED"

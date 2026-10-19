@@ -11,3 +11,4 @@ reports/junit.xml
 reports/coverage.xml
 .coverage
 .ruff_cache/
+docs/VIDEO_SCRIPT.md

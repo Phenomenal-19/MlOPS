@@ -52,6 +52,14 @@ bash scripts/lab_run.sh docker     # Docker image build and test (needs Docker)
 bash scripts/lab_run.sh k8s        # Kubernetes + monitoring on kind (needs Docker)
 ```
 
+To run **everything in one go** (ML pipeline, tests, Docker, Kubernetes, Prometheus + Grafana, MLflow UI) on a
+machine with Docker, use the full-pipeline script (about 15-25 minutes; it logs to `lab_full_run.log`):
+
+```bash
+bash scripts/lab_run_full_pipeline.sh            # run everything and print the URLs to open
+bash scripts/lab_run_full_pipeline.sh teardown   # remove the cluster and stop the MLflow UI
+```
+
 ## Quick start (local, Python 3.12)
 
 ```bash

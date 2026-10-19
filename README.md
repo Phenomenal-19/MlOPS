@@ -40,6 +40,18 @@ screenshots/                                       evidence for the report
 docs/                                              architecture diagram, report
 ```
 
+## One command on a Linux machine or virtual lab
+
+If you cannot copy and paste long commands, clone the repo and run one script. It creates a Python 3.12
+environment, installs the pinned requirements and runs the pipeline, tests and a local API check:
+
+```bash
+git clone https://github.com/Phenomenal-19/MlOPS.git && cd MlOPS
+bash scripts/lab_run.sh            # ML pipeline + tests + API check (Python only, ~8 min)
+bash scripts/lab_run.sh docker     # Docker image build and test (needs Docker)
+bash scripts/lab_run.sh k8s        # Kubernetes + monitoring on kind (needs Docker)
+```
+
 ## Quick start (local, Python 3.12)
 
 ```bash

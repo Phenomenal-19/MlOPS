@@ -13,3 +13,4 @@ reports/coverage.xml
 .ruff_cache/
 lab_full_run.log
 .mlflow_ui.pid
+docs/VIDEO_SCRIPT.md

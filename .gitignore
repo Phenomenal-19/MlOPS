@@ -11,6 +11,5 @@ reports/junit.xml
 reports/coverage.xml
 .coverage
 .ruff_cache/
-docs/VIDEO_SCRIPT.md
 lab_full_run.log
 .mlflow_ui.pid

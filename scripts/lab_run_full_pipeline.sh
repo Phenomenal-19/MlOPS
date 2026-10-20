@@ -82,10 +82,24 @@ preflight() {
       bad=1
     fi
   done
+  # Leftovers from earlier runs of this project are ours: remove stray API containers,
+  # and reuse an existing cluster (it legitimately holds port 8080; the deploy scripts are idempotent).
+  if docker ps -a --format '{{.Names}}' 2>/dev/null | grep -Eqx 'heart-api|heart-api-smoke'; then
+    echo "removing leftover heart-api container(s) from an earlier run"
+    docker rm -f heart-api heart-api-smoke >/dev/null 2>&1 || true
+    sleep 2
+  fi
+  local cluster_up=0
+  if docker ps --format '{{.Names}}' 2>/dev/null | grep -qx 'heart-mlops-control-plane'; then cluster_up=1; fi
   for p in 8080 8000; do
     if port_in_use "$p"; then
-      red "Port $p is already in use; free it and rerun (the cluster needs 8080, the API check 8000)"
-      bad=1
+      if [ "$p" = 8080 ] && [ "$cluster_up" = 1 ]; then
+        echo "port 8080 is held by the existing heart-mlops cluster; it will be reused"
+      else
+        red "Port $p is already in use by: $(ss -ltnp "sport = :$p" 2>/dev/null | awk 'NR>1 {print $NF}' | head -1)"
+        red "Free it and rerun (the cluster needs 8080, the API check 8000)."
+        bad=1
+      fi
     fi
   done
   if port_in_use "$UI_PORT"; then echo "note: port $UI_PORT is busy, so the MLflow UI will not be started"; fi
